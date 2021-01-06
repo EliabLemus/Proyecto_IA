@@ -258,7 +258,7 @@ def getHaversineDistances(lat1=0, lon1=0, lat2=0, lon2=0):
 
 
 def plot_field_data(data_x, data_y):
-    chart.scatter(data_x[0, :], data_x[1, :], c=data_y, s=25, cmap=chart.cm.Spectral)
+    chart.scatter(data_x[0, :], data_y[1, :], c=data_y, s=25, cmap=chart.cm.Spectral)
     chart.show()
 
 
@@ -357,16 +357,59 @@ def getMunicipiosDict():
             byDeptos[i] = byMunic
     
     return byDeptos
-        
+def getArray(gender,age,enrollmentYear,distanceFromUniversity,state):
+    result = []
+    #Arreglo:
+    #[male,female,age,year,distance,traslado,activo]
+    if gender == 'MASCULINO':
+        result.append(1)
+        result.append(0)
+    elif gender == 'FEMENINO':
+        result.append(0)
+        result.append(1)
+    else:
+        result.append(0)
+        result.append(0)
+    
+    result.append(float(age)) #Escalar 
+    result.append(float(enrollmentYear)) #escalar
+    result.append(float(distanceFromUniversity)) #escalar
+    if state == 'Traslado':
+        result.append(1)
+        result.append(0)
+    elif state == 'Activo':
+        result.append(0)
+        result.append(1)
+    else:
+        result.append(0)
+        result.append(0)
+     
+     
+    return result   
+    
+             
 def getDataset():
     list_dataset = []
     with open('Datasets/Dataset.csv', "rt", encoding='iso-8859-1') as f:
         reader = csv.DictReader(f, delimiter = ',')
         for k in reader:
             distance = getDistanceFromUniversity(cod_depto=int(k['cod_depto']), cod_municipio=int(k['cod_muni']))
-            list_dataset.append(Row(gender=k['Genero'],age=k['edad'],enrollmentYear=k['Año'],distanceFromUniversity=distance,state=k['Estado']))
-    return list_dataset        
+            list_dataset.append(getArray(gender=k['Genero'],age=k['edad'],enrollmentYear=k['Año'],distanceFromUniversity=distance,state=k['Estado']))
+        return np.array([escalateVariables(row=k) for k in list_dataset])
 
+
+def escalateVariables(row=[]):
+    target_positions = [2,3,4]
+    #[male,female,age,year,distance,traslado,activo]
+    #2 age: 
+    max_value = float(max(row))
+    min_value = float(min(row))
+    for k in target_positions:
+        to_escalate = row[k]
+        new_value = (to_escalate - min_value)/(max_value-min_value)
+        row[k]=new_value
+    return row
+    
 if __name__ == "__main__":
     MUNICIPIOS = getMunicipiosDict()
 
@@ -374,7 +417,34 @@ if __name__ == "__main__":
     #     6.27823496943, -75.5694735416, 6.28331696378, -75.5689742567
     # )
     # print("resultado:", result)
-    result = getDataset()
-    breakpoint()    
+    data_set = getDataset()
+    print(data_set.shape)
+    # divido 70/30
+    slice_point = int(data_set.shape[0] * 0.7)
+    print('slice_point:', slice_point)
+    #[male,female,age,year,distance,traslado,activo]
+    train_set_x = data_set[0:slice_point, :5]
+    train_set_y = data_set[0:slice_point, 5:]
+    
+    # train_set_y = np.random.randint(2, size=train_set_x.shape[0])
+    test_set_x = data_set[slice_point:, :5]
+    test_set_y = data_set[slice_point:, 5:]
+    print(train_set_x.shape)
+    print(train_set_y.shape)
+    print(test_set_x.shape)
+    print(test_set_y.shape)
+    
+    # train_set_x=np.reshape(train_set_x,)
+    train_set_x = train_set_x.T
+    train_set_y = train_set_y.T
+    test_set_x = test_set_x.T
+    test_set_y = test_set_y.T
+    
+    print(train_set_x.shape)
+    print(train_set_y.shape)
+    print(test_set_x.shape)
+    print(test_set_y.shape)
+    # plot_field_data(train_set_x, train_set_y)
+    
 
     
