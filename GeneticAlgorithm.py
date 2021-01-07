@@ -3,8 +3,8 @@ import random, math, itertools,pickle
 import numpy as np
 import NeuralNetwork 
 # individuals_population=[]
-max_generations = 5
-global_population = 1000
+max_generations = 7
+global_population = 4
 TRAIN = []
 TEST = []
 LAYERS = []
@@ -187,7 +187,7 @@ def chooseFathers(population, choose_father_options="best_value"):
         return parents
     elif tipo == Parents.BEST_VALUE:  # Best value
         # padres con el mejor valor fitness
-        population.sort(key=lambda x: x.fitnessValue, reverse=False)
+        population.sort(key=lambda x: x.fitnessValue, reverse=True)
         limit = int(len(population) / 2)
         for i in range(0, limit):
             parentA = population[i]
@@ -228,7 +228,7 @@ def match(parents):
         sons.append(son2)
         i += 1
 
-    parents = sorted(parents, key=lambda item: item.fitnessValue, reverse=False)
+    parents = sorted(parents, key=lambda item: item.fitnessValue, reverse=True)
 
     i = 0
     new_population = []
@@ -244,27 +244,24 @@ def cross(parent1, parent2):
     """
     Cruzar
     """
-    final_length = len(parent1)
-    new_solution = []
-    parents_merge = parent1 + parent2
-    [new_solution.append(x) for x in parents_merge if x not in new_solution]
-    if len(new_solution) > final_length:
-        new_solution = new_solution[:final_length]
-    elif len(new_solution) < final_length:
-        new_solution = parent1
-    random.shuffle(new_solution)
-    return new_solution
+    value1 = random.uniform(0,1)
+    value2 = random.uniform(0,1)
+    value3 = random.uniform(0,1)
+    value4 = random.uniform(0,1)
+    
+    
+    w1 = parent1[0] if value1 <= 0.5 else parent2[0]
+    w2 = parent1[1] if value2 <= 0.5 else parent2[1]
+    w3 = parent1[2] if value3 <= 0.5 else parent2[2]
+    w4 = parent1[3] if value4 <= 0.5 else parent2[3]
+
+    return [w1,w2,w3,w4]
 
 
 def mutate(solution):
-    prob = int(random.uniform(1, len(solution)))
-    solution[prob] = int(random.uniform(1, len(solution)))
-    # if prob < 0.5:
-    #     for i in range(0, len(solution)):
-    #         prob = random.uniform(0, 1)
-    #         if prob < 0.5:
-    #             solution[i] = int(random.uniform(1, len(solution)))
-    #         break
+    
+    position = random.randint(0,3)
+    solution[position] = random.randint(1,10)
     return solution
 
 def fitnessValue(square_data=[]):
@@ -283,6 +280,7 @@ def fitnessValue(square_data=[]):
     # differences = differencesSum(square_data=square_data, n=n)
     # result = (1 + repeated) * differences + (repeated ** 2)
     hyper_p = NeuralNetwork.getHyperParemeters(setup=square_data)
+    print('setup: ', square_data)
     print('hyper_p:',hyper_p)
     training, test, model = NeuralNetwork.useNetwork(TRAIN,TEST,LAYERS,alpha=hyper_p[0], iterations=hyper_p[2], lambd=hyper_p[1], keep_prob=hyper_p[3])
     return test
@@ -291,19 +289,20 @@ def fitnessValue(square_data=[]):
 if __name__ == "__main__":
     NeuralNetwork.buildHyperParameters()
     TRAIN,TEST,LAYERS=NeuralNetwork.initNeuralNetwork()
-    items = np.random.randint(1,9,size=(5,4))
+    items = np.random.randint(1,10,size=(global_population,4))
     print(items)
     population = []
     for i in items:
-        population.append(Solution(solution_proposed=i,fitnessValue=0))
+        fit_value = fitnessValue(square_data=i)
+        population.append(Solution(solution_proposed=i,fitnessValue=fit_value))
     generation = 0
 
     stop = check_criteria(generation, population=population)
     while stop != True:
         print('generation:', generation)
+        print("\n")
         # choose parents:
         parents = chooseFathers(population, choose_father_options="best_value")
-        print('parents:',parents)
         population = match(parents)
         generation += 1
         stop = check_criteria(generation, population=population)
@@ -318,6 +317,7 @@ if __name__ == "__main__":
     print('keep_prob:', hyper_p[3])
     print(population[0].solution_proposed)
     print('fitness value:', population[0].fitnessValue)
+    
     with open('TrainedModels/last_population.dat', 'wb') as f:
         pickle.dump(population,f)
 

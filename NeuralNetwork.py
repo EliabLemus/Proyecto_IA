@@ -238,15 +238,6 @@ class NN_Model:
         # print('name:', name, 'result:', result)
         return result
 
-
-class Row:
-    def __init__(self,gender,age,enrollmentYear,distanceFromUniversity,state):
-        self.gender = gender
-        self.age = age
-        self.enrollmentYear = enrollmentYear
-        self.distanceFromUniversity = distanceFromUniversity
-        self.state = state
-
 def getHaversineDistances(lat1=0, lon1=0, lat2=0, lon2=0):
     """
     lat1: latitud punto 1
@@ -350,9 +341,11 @@ def getCoordinatesMunicipio(municipios={},cod_depto=0,cod_municipio=0):
     lat = float(municipios.get(cod_depto).get(cod_municipio).get('Lat'))
     lon = float(municipios.get(cod_depto).get(cod_municipio).get('Lon'))
     return (lat,lon)
+
 def getDistanceFromUniversity(municipios,cod_depto=0,cod_municipio=0):
     mun_coordinates = getCoordinatesMunicipio(municipios,cod_depto=cod_depto, cod_municipio=cod_municipio)
     return getHaversineDistances(lat1=mun_coordinates[0],lon1=mun_coordinates[1],lat2=USAC_LAT,lon2=USAC_LON)
+
 def getMunicipiosDict():
     with open('Datasets/Municipios.csv', 'rt') as f:
         reader = csv.DictReader(f, delimiter = ',')
@@ -365,6 +358,7 @@ def getMunicipiosDict():
                 byMunic[int(a.get('Muni'))] = a
             byDeptos[i] = byMunic
     return byDeptos
+
 def getArray(gender,age,enrollmentYear,distanceFromUniversity,state):
     result = []
     #Arreglo:
@@ -414,12 +408,13 @@ def escalateVariables(row=[]):
         new_value = (to_escalate - min_value)/(max_value-min_value)
         row[k]=new_value
     return row
+
 def initNeuralNetwork():
     MUNICIPIOS = getMunicipiosDict()
 
     data_set = getDataset(MUNICIPIOS)
     # divido 70/30
-    slice_point = int(data_set.shape[0] * 0.8)
+    slice_point = int(data_set.shape[0] * 0.7)
     print('slice_point:', slice_point)
     #[male,female,age,year,distance,traslado,activo]
     
@@ -445,7 +440,7 @@ def initNeuralNetwork():
     
     train = Data(train_set_x, train_set_y)
     test = Data(test_set_x, test_set_y)
-    layers = [train.n, 7, 10, 10, 7, 1]
+    layers = [train.n, 11, 15, 13, 7, 1]
     return train,test,layers
 
 def useNetwork(train, test, layers, alpha=0, iterations=0, lambd=0, keep_prob=0):
@@ -464,16 +459,16 @@ def useNetwork(train, test, layers, alpha=0, iterations=0, lambd=0, keep_prob=0)
 
 def buildHyperParameters(show=False):
     hyper_limit = 10
-    default_lambda = list(np.random.sample(((hyper_limit -1),)))
+    default_lambda = [np.random.uniform(0.5, 7) for x in range(0,hyper_limit)]
     default_lambda.append(0)
-    alpha_values = np.random.sample((hyper_limit,))
-    max_iteration_values = np.random.randint(low=500,high=25000,size=hyper_limit)
+    alpha_values = [np.random.uniform(0.5, 0.00001) for x in range(0,hyper_limit)]
+    max_iteration_values = np.random.randint(low=100,high=1500,size=hyper_limit)
     keep_prob_values = list(np.random.sample(((hyper_limit - 1),)))
     keep_prob_values.append(1)
     
     # print(a)
     # np.random.shuffle(default_lambda)
-    HYPER["alpha"] =  dict(enumerate(alpha_values.flatten(), 1))#valores aleatorios menores que 0 
+    HYPER["alpha"] =  dict(enumerate(alpha_values, 1))#valores aleatorios menores que 0 
     HYPER["lambda"] = dict(enumerate(default_lambda,1))  #valores aleatorios menores que 0
     HYPER["max_iteration"] = dict(enumerate(max_iteration_values, 1)) #valores aleatorios mayores que 500
     HYPER["keep_prob"] = dict(enumerate(keep_prob_values,1)) #valores aleatorios entre 0 y 1
