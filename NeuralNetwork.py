@@ -267,7 +267,8 @@ def show_Model(models):
     chart.ylabel("Costo")
     chart.xlabel("Iteraciones")
     legend = chart.legend(loc="upper center", shadow=True)
-    chart.show()
+    chart.savefig('static/ModelGraphs/best_model.png')
+    # chart.show()
 
 
 def getData():

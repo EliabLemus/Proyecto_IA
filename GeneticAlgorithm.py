@@ -309,7 +309,14 @@ if __name__ == "__main__":
 
     population.sort(key=lambda x: x.fitnessValue, reverse=True)
     print("\n")
+    
+    
+    
+    with open('TrainedModels/last_population.dat', 'wb') as f:
+        pickle.dump(population,f)
+
     hyper_p = NeuralNetwork.getHyperParemeters(setup=population[0].solution_proposed)
+    print('Best model details:')
     print('parameters:', hyper_p)
     print('alpha:', hyper_p[0])
     print('lambda:', hyper_p[1])
@@ -317,11 +324,6 @@ if __name__ == "__main__":
     print('keep_prob:', hyper_p[3])
     print(population[0].solution_proposed)
     print('fitness value:', population[0].fitnessValue)
-    
-    with open('TrainedModels/last_population.dat', 'wb') as f:
-        pickle.dump(population,f)
-
-    hyper_p = NeuralNetwork.getHyperParemeters(setup=population[0].solution_proposed)
     training, test, model = NeuralNetwork.useNetwork(TRAIN,TEST,LAYERS,alpha=hyper_p[0], iterations=hyper_p[2], lambd=hyper_p[1], keep_prob=hyper_p[3])
     with open('TrainedModels/best_model.dat', 'wb') as f:
-        pickle.dump(population,f)
+        pickle.dump(model,f)
