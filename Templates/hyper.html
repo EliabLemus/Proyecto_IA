@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<style>
+.thick-border {
+        border: 3px solid black;
+        border-collapse: collapse;
+}
+.content {
+  max-width: 500px;
+  margin: auto;
+}
+
+</style>
+<body>
+<div id="formulario" class="content">
+<h1>Escuela de Ciencias y Sistemas</h1>
+
+<p>Ingrese los datos generales del aspirante</p>
+<table>
+{% for key, value in hyper_data.items() %}
+   <tr>
+        <th> {{ key }} </th>
+        <td> {% for a, b in value.items() %} <td>{{ a }} : {{ b }}<br><br></td> {% endfor %}</td>
+   </tr>
+{% endfor %}
+</table>
+</div>
+</body>
+</html>

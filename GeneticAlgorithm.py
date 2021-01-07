@@ -1,9 +1,9 @@
 from enum import Enum
-import random, math, itertools
+import random, math, itertools,pickle
 import numpy as np
 import NeuralNetwork 
 # individuals_population=[]
-max_generations = 2
+max_generations = 5
 global_population = 1000
 TRAIN = []
 TEST = []
@@ -101,57 +101,6 @@ def getDiagInverse(square=[], n=0):
         diagInverse.append(square[indice - 1])
         contador -= 1
     return diagInverse
-
-
-def getRows(square=[], n=0):
-    """
-    n=math.sqrt(len(square))
-    """
-    row = []
-    result = []
-    filas = int(len(square) / n)
-    columnas = filas
-    contador = 1
-    for a in range(0, int(filas)):
-        for k in range(0, filas):
-            indice = int((a * n) + contador)
-            row.append(square[indice - 1])
-            contador += 1
-            if contador > filas:
-                contador = 1
-                result.append(row)
-                row = []
-    return result
-
-
-def getColumns(square=[], n=0):
-    column = []
-    result = []
-    columnas = int(len(square) / n)
-    contador = 1
-    for a in range(0, columnas):
-        for k in range(0, columnas):
-            indice = int((k * n) + a)
-            column.append(square[indice])
-            contador += 1
-            if contador > columnas:
-                contador = 1
-                result.append(column)
-                column = []
-    return result
-
-
-def buildPopulation(population=global_population, n=3):
-    """
-    file_rows: Data from csv file
-    population: number of initial population to work
-    """
-    individuals_population = getPopulation(population, n=n)
-
-    for s in individuals_population:
-        s.fitnessValue = fitnessValue(square_data=s.solution_proposed)
-    return individuals_population
-
 
 class Criteria(Enum):
     MAXIMA_GENERACION = 0
@@ -308,14 +257,14 @@ def cross(parent1, parent2):
 
 
 def mutate(solution):
-    prob = random.uniform(0, 1)
-
-    if prob < 0.5:
-        for i in range(0, len(solution)):
-            prob = random.uniform(0, 1)
-            if prob < 0.5:
-                solution[i] = int(random.uniform(1, len(solution)))
-            break
+    prob = int(random.uniform(1, len(solution)))
+    solution[prob] = int(random.uniform(1, len(solution)))
+    # if prob < 0.5:
+    #     for i in range(0, len(solution)):
+    #         prob = random.uniform(0, 1)
+    #         if prob < 0.5:
+    #             solution[i] = int(random.uniform(1, len(solution)))
+    #         break
     return solution
 
 def fitnessValue(square_data=[]):
@@ -334,18 +283,19 @@ def fitnessValue(square_data=[]):
     # differences = differencesSum(square_data=square_data, n=n)
     # result = (1 + repeated) * differences + (repeated ** 2)
     hyper_p = NeuralNetwork.getHyperParemeters(setup=square_data)
-    training, test = NeuralNetwork.useNetwork(TRAIN,TEST,LAYERS,alpha=hyper_p[0], iterations=hyper_p[2], lambd=hyper_p[1], keep_prob=hyper_p[3])
+    print('hyper_p:',hyper_p)
+    training, test, model = NeuralNetwork.useNetwork(TRAIN,TEST,LAYERS,alpha=hyper_p[0], iterations=hyper_p[2], lambd=hyper_p[1], keep_prob=hyper_p[3])
     return test
 
 
 if __name__ == "__main__":
     NeuralNetwork.buildHyperParameters()
     TRAIN,TEST,LAYERS=NeuralNetwork.initNeuralNetwork()
-    items = np.random.randint(1,5,size=(5,4))
+    items = np.random.randint(1,9,size=(5,4))
     print(items)
     population = []
     for i in items:
-        population.append(Solution(solution_proposed=i,fitnessValue=100))
+        population.append(Solution(solution_proposed=i,fitnessValue=0))
     generation = 0
 
     stop = check_criteria(generation, population=population)
@@ -353,11 +303,12 @@ if __name__ == "__main__":
         print('generation:', generation)
         # choose parents:
         parents = chooseFathers(population, choose_father_options="best_value")
+        print('parents:',parents)
         population = match(parents)
         generation += 1
         stop = check_criteria(generation, population=population)
 
-    population.sort(key=lambda x: x.fitnessValue, reverse=False)
+    population.sort(key=lambda x: x.fitnessValue, reverse=True)
     print("\n")
     hyper_p = NeuralNetwork.getHyperParemeters(setup=population[0].solution_proposed)
     print('parameters:', hyper_p)
@@ -367,3 +318,10 @@ if __name__ == "__main__":
     print('keep_prob:', hyper_p[3])
     print(population[0].solution_proposed)
     print('fitness value:', population[0].fitnessValue)
+    with open('TrainedModels/last_population.dat', 'wb') as f:
+        pickle.dump(population,f)
+
+    hyper_p = NeuralNetwork.getHyperParemeters(setup=population[0].solution_proposed)
+    training, test, model = NeuralNetwork.useNetwork(TRAIN,TEST,LAYERS,alpha=hyper_p[0], iterations=hyper_p[2], lambd=hyper_p[1], keep_prob=hyper_p[3])
+    with open('TrainedModels/best_model.dat', 'wb') as f:
+        pickle.dump(population,f)

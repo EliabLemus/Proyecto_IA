@@ -1,4 +1,4 @@
-import math, csv
+import math, csv,pickle
 from os import error
 import numpy as np
 import matplotlib.pyplot as chart
@@ -448,7 +448,7 @@ def initNeuralNetwork():
     layers = [train.n, 7, 10, 10, 7, 1]
     return train,test,layers
 
-def useNetwork(train, test, layers, alpha=0.0003, iterations=1000, lambd=0.0005, keep_prob=1):
+def useNetwork(train, test, layers, alpha=0, iterations=0, lambd=0, keep_prob=0):
     
     # Se define el modelo
     Model1 = NN_Model(
@@ -460,14 +460,14 @@ def useNetwork(train, test, layers, alpha=0.0003, iterations=1000, lambd=0.0005,
     result_training = Model1.predict(train)
     # print("Validacion Modelo 1")
     result_test = Model1.predict(test)
-    return result_training,result_test
+    return result_training,result_test, Model1
 
 def buildHyperParameters(show=False):
-    hyper_limit = 5
+    hyper_limit = 10
     default_lambda = list(np.random.sample(((hyper_limit -1),)))
     default_lambda.append(0)
     alpha_values = np.random.sample((hyper_limit,))
-    max_iteration_values = np.random.randint(low=500,high=5000,size=hyper_limit)
+    max_iteration_values = np.random.randint(low=500,high=25000,size=hyper_limit)
     keep_prob_values = list(np.random.sample(((hyper_limit - 1),)))
     keep_prob_values.append(1)
     
@@ -480,6 +480,8 @@ def buildHyperParameters(show=False):
     if show:
         for key, value in HYPER.items():
             print(key,value)
+    with open('TrainedModels/HyperParameters.dat', 'wb') as f:
+        pickle.dump(HYPER,f)
     
 def getHyperParemeters(setup=[]):
     if len(setup) > 4:
