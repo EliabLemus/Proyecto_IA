@@ -298,7 +298,7 @@ def example():
     # # # print('slice_point:', slice_point)
     train_set_x = data_set[0:slice_point]
     train_set_y = np.random.randint(2, size=train_set_x.shape[0])
-    breakpoint()
+    
     test_set_x = data_set[slice_point:]
     test_set_y = np.random.randint(2, size=test_set_x.shape[0])
 
@@ -375,13 +375,10 @@ def getArray(gender,age,enrollmentYear,distanceFromUniversity,state):
     result.append(float(enrollmentYear)) #escalar
     result.append(float(distanceFromUniversity)) #escalar
     if state == 'Traslado':
-        result.append(1)
         result.append(0)
     elif state == 'Activo':
-        result.append(0)
         result.append(1)
     else:
-        result.append(0)
         result.append(0)
      
      
@@ -400,7 +397,7 @@ def getDataset():
 
 def escalateVariables(row=[]):
     target_positions = [2,3,4]
-    #[male,female,age,year,distance,traslado,activo]
+    #[male,female,age,year,distance,traslado/activo]
     #2 age: 
     max_value = float(max(row))
     min_value = float(min(row))
@@ -423,28 +420,41 @@ if __name__ == "__main__":
     slice_point = int(data_set.shape[0] * 0.7)
     print('slice_point:', slice_point)
     #[male,female,age,year,distance,traslado,activo]
+    
     train_set_x = data_set[0:slice_point, :5]
     train_set_y = data_set[0:slice_point, 5:]
     
     # train_set_y = np.random.randint(2, size=train_set_x.shape[0])
     test_set_x = data_set[slice_point:, :5]
     test_set_y = data_set[slice_point:, 5:]
-    print(train_set_x.shape)
-    print(train_set_y.shape)
-    print(test_set_x.shape)
-    print(test_set_y.shape)
+
     
-    # train_set_x=np.reshape(train_set_x,)
+
     train_set_x = train_set_x.T
     train_set_y = train_set_y.T
     test_set_x = test_set_x.T
     test_set_y = test_set_y.T
     
-    print(train_set_x.shape)
-    print(train_set_y.shape)
-    print(test_set_x.shape)
-    print(test_set_y.shape)
+    print('train_set_x: ',train_set_x.shape)
+    print('train_set_y: ',train_set_y.shape)
+    print('test_set_x:', test_set_x.shape)
+    print('test_set_y: ', test_set_y.shape)
     # plot_field_data(train_set_x, train_set_y)
+    
+    train = Data(train_set_x, train_set_y)
+    test = Data(test_set_x, test_set_y)
+    layers = [train.n, 7, 7,5, 1]
+
+    # Se define el modelo
+    Model1 = NN_Model(
+        train, layers, alpha=0.005, iterations=10000, lambd=0.007, keep_prob=1
+    )
+    Model1.training(True)
+    show_Model([Model1])
+    print("Entrenamiento Modelo 1")
+    Model1.predict(train)
+    print("Validacion Modelo 1")
+    Model1.predict(test)
     
 
     
