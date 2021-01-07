@@ -7,6 +7,7 @@ from numpy.core.fromnumeric import size
 USAC_LAT=14.589246
 USAC_LON=-90.551449
 MUNICIPIOS = {}
+MUNICIPIOS_GLOBAL = dict()
 HYPER = {}
  
 class Data:
@@ -68,6 +69,7 @@ class NN_Model:
         # cuento las capas existentes
         layers_count = int(len(self.parametros.keys()) / 2)
         A = 0
+        
         for l in range(1, layers_count + 1):
             if l == 1:
                 activation_name = "relu" 
@@ -269,73 +271,55 @@ def show_Model(models):
     legend = chart.legend(loc="upper center", shadow=True)
     chart.savefig('static/ModelGraphs/best_model.png')
     # chart.show()
+    chart.close()
 
-
-def getData():
-    result = []
-    # limit = 500
-    # random limits = -50,50
-
-    limit = 500
-    for k in range(0, limit):
-        # k = x
-        x = np.random.randint(-50, 50)
-        result.append([x, getFunctionValue(x)])
-    return np.array(result)
-
-
-def getFunctionValue(x):
-    # x^2 - sin(x) + 1
-    return ((x ** 2) / 100) - math.sin(x) + 1
-
-
-def example():
-    ONLY_SHOW = False
-    data_set = getData()
-    print(data_set.shape)
-    # divido 70/30
-    slice_point = int(data_set.shape[0] * 0.7)
-    # # # print('slice_point:', slice_point)
-    train_set_x = data_set[0:slice_point]
-    train_set_y = np.random.randint(2, size=train_set_x.shape[0])
+# def example():
+#     ONLY_SHOW = False
+#     # data_set = getData()
+#     print(data_set.shape)
+#     # divido 70/30
+#     slice_point = int(data_set.shape[0] * 0.7)
+#     # # # print('slice_point:', slice_point)
+#     train_set_x = data_set[0:slice_point]
+#     train_set_y = np.random.randint(2, size=train_set_x.shape[0])
     
-    test_set_x = data_set[slice_point:]
-    test_set_y = np.random.randint(2, size=test_set_x.shape[0])
+#     test_set_x = data_set[slice_point:]
+#     test_set_y = np.random.randint(2, size=test_set_x.shape[0])
 
-    train_set_x = train_set_x.T
-    train_set_y = train_set_y.T
-    test_set_x = test_set_x.T
-    test_set_y = test_set_y.T
+#     train_set_x = train_set_x.T
+#     train_set_y = train_set_y.T
+#     test_set_x = test_set_x.T
+#     test_set_y = test_set_y.T
 
-    if ONLY_SHOW:
-        plot_field_data(train_set_x, train_set_y)
-        # Plotter.plot_field_data(val_X, val_Y)
-        print("Entradas de entrenamiento:", train_set_x.shape, sep=" ")
-        print("Salidas de entrenamiento:", train_set_y.shape, sep=" ")
-        print("Entradas de validacion:", test_set_x.shape, sep=" ")
-        print("Salidas de validacion:", test_set_y.shape, sep=" ")
-        exit()
+#     if ONLY_SHOW:
+#         plot_field_data(train_set_x, train_set_y)
+#         # Plotter.plot_field_data(val_X, val_Y)
+#         print("Entradas de entrenamiento:", train_set_x.shape, sep=" ")
+#         print("Salidas de entrenamiento:", train_set_y.shape, sep=" ")
+#         print("Entradas de validacion:", test_set_x.shape, sep=" ")
+#         print("Salidas de validacion:", test_set_y.shape, sep=" ")
+#         exit()
 
-    train = Data(train_set_x, train_set_y, 100)
-    test = Data(test_set_x, test_set_y, 100)
-    layers = [train.n, 10, 5, 1]
+#     train = Data(train_set_x, train_set_y, 100)
+#     test = Data(test_set_x, test_set_y, 100)
+#     layers = [train.n, 10, 5, 1]
 
-    # Se define el modelo
-    Model1 = NN_Model(
-        train, layers, alpha=0.01, iterations=50000, lambd=0.7, keep_prob=1
-    )
-    Model1.training(True)
-    show_Model([Model1])
-    print("Entrenamiento Modelo 1")
-    Model1.predict(train)
-    print("Validacion Modelo 1")
-    Model1.predict(test)
+#     # Se define el modelo
+#     Model1 = NN_Model(
+#         train, layers, alpha=0.01, iterations=50000, lambd=0.7, keep_prob=1
+#     )
+#     Model1.training(True)
+#     show_Model([Model1])
+#     print("Entrenamiento Modelo 1")
+#     Model1.predict(train)
+#     print("Validacion Modelo 1")
+#     Model1.predict(test)
 
-    plot_field_data(train_set_x, train_set_y)
-    print("Entradas de entrenamiento:", train_set_x.shape, sep=" ")
-    print("Salidas de entrenamiento:", train_set_y.shape, sep=" ")
-    print("Entradas de validacion:", test_set_x.shape, sep=" ")
-    print("Salidas de validacion:", test_set_y.shape, sep=" ")
+#     plot_field_data(train_set_x, train_set_y)
+#     print("Entradas de entrenamiento:", train_set_x.shape, sep=" ")
+#     print("Salidas de entrenamiento:", train_set_y.shape, sep=" ")
+#     print("Entradas de validacion:", test_set_x.shape, sep=" ")
+#     print("Salidas de validacion:", test_set_y.shape, sep=" ")
 
 def getCoordinatesMunicipio(municipios={},cod_depto=0,cod_municipio=0):
     
@@ -359,6 +343,9 @@ def getMunicipiosDict():
                 byMunic[int(a.get('Muni'))] = a
             byDeptos[i] = byMunic
     return byDeptos
+
+def getMunicipios():
+    return MUNICIPIOS_GLOBAL
 
 def getArray(gender,age,enrollmentYear,distanceFromUniversity,state):
     result = []
@@ -384,19 +371,25 @@ def getArray(gender,age,enrollmentYear,distanceFromUniversity,state):
     else:
         result.append(0)
      
-     
     return result   
     
              
-def getDataset(municipios = {}):
+def getDataset(municipios = {},path='Datasets/Dataset.csv'):
     list_dataset = []
-    with open('Datasets/Dataset.csv', "rt", encoding='iso-8859-1') as f:
+    with open(path, "rt", encoding='iso-8859-1') as f:
         reader = csv.DictReader(f, delimiter = ',')
         for k in reader:
             distance = getDistanceFromUniversity(municipios,cod_depto=int(k['cod_depto']), cod_municipio=int(k['cod_muni']))
             list_dataset.append(getArray(gender=k['Genero'],age=k['edad'],enrollmentYear=k['Año'],distanceFromUniversity=distance,state=k['Estado']))
         return np.array([escalateVariables(row=k) for k in list_dataset])
 
+def getSingleDataset(municipios={},k={}):
+    list_dataset=[]
+    distance = getDistanceFromUniversity(municipios,cod_depto=int(k['cod_depto']), cod_municipio=int(k['cod_muni']))
+    list_dataset.append(getArray(gender=k['Genero'],age=k['edad'],enrollmentYear=k['Año'],distanceFromUniversity=distance,state=k['Estado']))
+    return np.array([escalateVariables(row=k) for k in list_dataset])
+    
+    
 
 def escalateVariables(row=[]):
     target_positions = [2,3,4]
@@ -409,10 +402,43 @@ def escalateVariables(row=[]):
         new_value = (to_escalate - min_value)/(max_value-min_value)
         row[k]=new_value
     return row
-
+def initNeuralNetworkSingle(data={}):
+    MUNICIPIOS = getMunicipiosDict()
+    MUNICIPIOS_GLOBAL = MUNICIPIOS.copy()
+    data_set = getSingleDataset(MUNICIPIOS,k=data)
+    
+    # divido 70/30
+    # slice_point = int(data_set.shape[0] * 1)
+    # print('slice_point:', slice_point)
+    #[male,female,age,year,distance,traslado,activo]
+    
+    # train_set_x = data_set[:5]
+    # train_set_y = data_set[5:]
+    
+    # train_set_y = np.random.randint(2, size=train_set_x.shape[0])
+    test_set_x = data_set[1:5]
+    
+    test_set_y = data_set[0:,5:]
+    
+    breakpoint()
+    # train_set_x = train_set_x.T
+    # train_set_y = train_set_y.T
+    test_set_x = test_set_x.T
+    test_set_y = test_set_y.T
+    
+    # print('train_set_x: ',train_set_x.shape)
+    # print('train_set_y: ',train_set_y.shape)
+    print('test_set_x:', test_set_x.shape)
+    print('test_set_y: ', test_set_y.shape)
+    # plot_field_data(train_set_x, train_set_y)
+    
+    # train = Data(train_set_x, train_set_y)
+    test = Data(test_set_x, test_set_y)
+    # layers = [train.n, 11, 15, 13, 7, 1]
+    return test
 def initNeuralNetwork():
     MUNICIPIOS = getMunicipiosDict()
-
+    MUNICIPIOS_GLOBAL = MUNICIPIOS.copy()
     data_set = getDataset(MUNICIPIOS)
     # divido 70/30
     slice_point = int(data_set.shape[0] * 0.7)
@@ -421,7 +447,7 @@ def initNeuralNetwork():
     
     train_set_x = data_set[0:slice_point, :5]
     train_set_y = data_set[0:slice_point, 5:]
-    
+    breakpoint()
     # train_set_y = np.random.randint(2, size=train_set_x.shape[0])
     test_set_x = data_set[slice_point:, :5]
     test_set_y = data_set[slice_point:, 5:]

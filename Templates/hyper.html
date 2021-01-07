@@ -12,10 +12,10 @@
 
 </style>
 <body>
-<div id="formulario" class="content">
+<div id="formulario">
 <h1>Escuela de Ciencias y Sistemas</h1>
 
-<p>Hiper parametros</p>
+<h2><p>Hiper parametros</p></h2>
 <table>
 {% for key, value in hyper_data.items() %}
    <tr>
@@ -25,5 +25,34 @@
 {% endfor %}
 </table>
 </div>
+{% if model %}
+<div>
+<h2> Detalle modelo: </h2>
+<table>
+<tr>
+<th>alpha</th><td>{{ model.alpha }}</td>
+</tr>
+<tr>
+<th>lambda</th><td>{{ model.lambd }}</td>
+</tr>
+<tr>
+<th>keep prob</th><td>{{ model.kp }}</td>
+</tr>
+<tr>
+<th>iterations</th><td>{{ model.max_iteration }}</td>
+</tr>
+</table>
+</div>
+{%endif%}
+{% if population %}
+<table>
+{% for a in population %}
+    <tr>
+    <th> item </th>
+    <td> a <td>
+    </tr>
+{% endfor%}
+</table>
+{% endif %}
 </body>
 </html>
