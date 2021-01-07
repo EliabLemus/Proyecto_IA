@@ -1,10 +1,13 @@
 from enum import Enum
 import random, math, itertools
-
+import numpy as np
+import NeuralNetwork 
 # individuals_population=[]
-max_generations = 1000
+max_generations = 2
 global_population = 1000
-
+TRAIN = []
+TEST = []
+LAYERS = []
 
 class Solution:
     def __init__(self, solution_proposed=[], fitnessValue=0):
@@ -23,10 +26,6 @@ class Row:
 # Return an array of random values between low and high boundaries
 def getSolutions(low, high, size):
     return [int(random.uniform(low, high)) for _ in range(size)]
-
-
-def getBestSolution():
-    return best_solution
 
 
 # Return an array of arrays with random values
@@ -78,21 +77,6 @@ def differencesSum(square_data=[], n=0):
     return sum_row + sum_col + sum_diag1 + sum_diag2
 
 
-def fitnessValue(square_data=[]):
-    """
-    Exactitud de la validacion de la red neuronal
-    """
-    n = math.sqrt(len(square_data))
-    X = square_data
-    Y = [(x, len(list(y))) for x, y in itertools.groupby(X)]
-    # Repetidos:
-    repeated = 0
-    for a in Y:
-        if a[1] > 1:
-            repeated += 1
-    differences = differencesSum(square_data=square_data, n=n)
-    result = (1 + repeated) * differences + (repeated ** 2)
-    return result
 
 
 def getDiag(square=[], n=0):
@@ -193,19 +177,20 @@ def check_criteria(generation, population=[]):
     criteria: Type of criteria to evaluate
     """
 
-    if generation >= max_generations:
-        return True
-    else:
-        # un miembro de la poblacion alcance un valor fitnes.
-        population.sort(key=lambda x: x.fitnessValue, reverse=False)
-        print("-> Generacion {}: {}".format(generation, population[0].fitnessValue))
-        # print('minimo: ', population[0].fitnessValue)
-        for i in population:
-            if i.fitnessValue == 0:
-                return True
-            else:
-                return False
-    return False
+    # if generation >= max_generations:
+    #     return True
+    
+    # else:
+    #     # un miembro de la poblacion alcance un valor fitnes.
+    #     population.sort(key=lambda x: x.fitnessValue, reverse=False)
+    #     print("-> Generacion {}: {}".format(generation, population[0].fitnessValue))
+    #     # print('minimo: ', population[0].fitnessValue)
+    #     for i in population:
+    #         if i.fitnessValue == 0:
+    #             return True
+    #         else:
+    #             return False
+    return generation >= max_generations
 
 
 class Parents(Enum):
@@ -333,47 +318,39 @@ def mutate(solution):
             break
     return solution
 
-
-def printBestSolution(square=[], n=0):
-    rows = getRows(square, n=n)
-    square_row = ""
-    counter = 1
-    for r in rows:
-        for i in r:
-            square_row += "|{}".format(i)
-
-        counter += 1
-        square_row += "|\n"
-        if counter <= len(rows):
-            square_row += "-" * (len(square_row) - 1)
-        print(square_row)
-        square_row = ""
-
-
-def askForOptions():
-    print("******************************")
-    print("*  Ingrese un valor de n     *")
-    print("******************************\n")
-    option = input("-> ")
-    return list(option)
+def fitnessValue(square_data=[]):
+    """
+    Exactitud de la validacion de la red neuronal
+    """
+    #TODO: Evaluar la red neuronal para obtener el valor fitness. 
+    # n = math.sqrt(len(square_data))
+    # X = square_data
+    # Y = [(x, len(list(y))) for x, y in itertools.groupby(X)]
+    # # Repetidos:
+    # repeated = 0
+    # for a in Y:
+    #     if a[1] > 1:
+    #         repeated += 1
+    # differences = differencesSum(square_data=square_data, n=n)
+    # result = (1 + repeated) * differences + (repeated ** 2)
+    hyper_p = NeuralNetwork.getHyperParemeters(setup=square_data)
+    training, test = NeuralNetwork.useNetwork(TRAIN,TEST,LAYERS,alpha=hyper_p[0], iterations=hyper_p[2], lambd=hyper_p[1], keep_prob=hyper_p[3])
+    return test
 
 
 if __name__ == "__main__":
-    # square1 = [8,1,6,3,5,7,4,9,2]
-    # square2 = [5,2,8,4,5,4,3,8,3]
-    # result = cross(square1,square2)
-    # print('crossed:', result)
-
-    n = int(askForOptions()[0])
-    # start
-    population = buildPopulation(population=3000, n=n)
-    # population.append(Solution(solution_proposed = [8,1,6,3,5,7,4,9,2],fitnessValue=0))
-    # for a in population:
-    #     printObject(a)
-
+    NeuralNetwork.buildHyperParameters()
+    TRAIN,TEST,LAYERS=NeuralNetwork.initNeuralNetwork()
+    items = np.random.randint(1,5,size=(5,4))
+    print(items)
+    population = []
+    for i in items:
+        population.append(Solution(solution_proposed=i,fitnessValue=100))
     generation = 0
+
     stop = check_criteria(generation, population=population)
     while stop != True:
+        print('generation:', generation)
         # choose parents:
         parents = chooseFathers(population, choose_father_options="best_value")
         population = match(parents)
@@ -382,4 +359,11 @@ if __name__ == "__main__":
 
     population.sort(key=lambda x: x.fitnessValue, reverse=False)
     print("\n")
-    printBestSolution(population[0].solution_proposed, n)
+    hyper_p = NeuralNetwork.getHyperParemeters(setup=population[0].solution_proposed)
+    print('parameters:', hyper_p)
+    print('alpha:', hyper_p[0])
+    print('lambda:', hyper_p[1])
+    print('max_iteration:', hyper_p[2])
+    print('keep_prob:', hyper_p[3])
+    print(population[0].solution_proposed)
+    print('fitness value:', population[0].fitnessValue)

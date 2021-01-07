@@ -1,10 +1,13 @@
 import math, csv
+from os import error
 import numpy as np
 import matplotlib.pyplot as chart
+from numpy.core.fromnumeric import size
 
 USAC_LAT=14.589246
 USAC_LON=-90.551449
 MUNICIPIOS = {}
+HYPER = {}
  
 class Data:
     def __init__(self, data_set_x, data_set_y, max_value=1):
@@ -29,7 +32,7 @@ class NN_Model:
         parametros = {}
         L = len(layers)
 
-        print("layers:", layers)
+        # print("layers:", layers)
         for l in range(1, L):
             # np.random.randn(layers[l], layers[l-1])
             # Crea un arreglo que tiene layers[l] arreglos, donde cada uno de estos arreglos tiene layers[l-1] elementos con valores aleatorios
@@ -66,7 +69,12 @@ class NN_Model:
         layers_count = int(len(self.parametros.keys()) / 2)
         A = 0
         for l in range(1, layers_count + 1):
-            activation_name = "sigmoide" if l == layers_count else "tanh"
+            if l == 1:
+                activation_name = "relu" 
+            elif l == layers_count: 
+                activation_name = "sigmoide"
+            else:
+                activation_name = "tanh"    
             dropout = False if l == layers_count else True
             WK = self.parametros["W" + str(l)]
             BK = self.parametros["b" + str(l)]
@@ -337,12 +345,13 @@ def example():
     print("Entradas de validacion:", test_set_x.shape, sep=" ")
     print("Salidas de validacion:", test_set_y.shape, sep=" ")
 
-def getCoordinatesMunicipio(cod_depto=0,cod_municipio=0):
-    lat = float(MUNICIPIOS.get(cod_depto).get(cod_municipio).get('Lat'))
-    lon = float(MUNICIPIOS.get(cod_depto).get(cod_municipio).get('Lon'))
+def getCoordinatesMunicipio(municipios={},cod_depto=0,cod_municipio=0):
+    
+    lat = float(municipios.get(cod_depto).get(cod_municipio).get('Lat'))
+    lon = float(municipios.get(cod_depto).get(cod_municipio).get('Lon'))
     return (lat,lon)
-def getDistanceFromUniversity(cod_depto=0,cod_municipio=0):
-    mun_coordinates = getCoordinatesMunicipio(cod_depto=cod_depto, cod_municipio=cod_municipio)
+def getDistanceFromUniversity(municipios,cod_depto=0,cod_municipio=0):
+    mun_coordinates = getCoordinatesMunicipio(municipios,cod_depto=cod_depto, cod_municipio=cod_municipio)
     return getHaversineDistances(lat1=mun_coordinates[0],lon1=mun_coordinates[1],lat2=USAC_LAT,lon2=USAC_LON)
 def getMunicipiosDict():
     with open('Datasets/Municipios.csv', 'rt') as f:
@@ -355,7 +364,6 @@ def getMunicipiosDict():
             for a in municipios:
                 byMunic[int(a.get('Muni'))] = a
             byDeptos[i] = byMunic
-    
     return byDeptos
 def getArray(gender,age,enrollmentYear,distanceFromUniversity,state):
     result = []
@@ -385,12 +393,12 @@ def getArray(gender,age,enrollmentYear,distanceFromUniversity,state):
     return result   
     
              
-def getDataset():
+def getDataset(municipios = {}):
     list_dataset = []
     with open('Datasets/Dataset.csv', "rt", encoding='iso-8859-1') as f:
         reader = csv.DictReader(f, delimiter = ',')
         for k in reader:
-            distance = getDistanceFromUniversity(cod_depto=int(k['cod_depto']), cod_municipio=int(k['cod_muni']))
+            distance = getDistanceFromUniversity(municipios,cod_depto=int(k['cod_depto']), cod_municipio=int(k['cod_muni']))
             list_dataset.append(getArray(gender=k['Genero'],age=k['edad'],enrollmentYear=k['Año'],distanceFromUniversity=distance,state=k['Estado']))
         return np.array([escalateVariables(row=k) for k in list_dataset])
 
@@ -406,18 +414,12 @@ def escalateVariables(row=[]):
         new_value = (to_escalate - min_value)/(max_value-min_value)
         row[k]=new_value
     return row
-    
-if __name__ == "__main__":
+def initNeuralNetwork():
     MUNICIPIOS = getMunicipiosDict()
 
-    # result = getHaversineDistances(
-    #     6.27823496943, -75.5694735416, 6.28331696378, -75.5689742567
-    # )
-    # print("resultado:", result)
-    data_set = getDataset()
-    print(data_set.shape)
+    data_set = getDataset(MUNICIPIOS)
     # divido 70/30
-    slice_point = int(data_set.shape[0] * 0.7)
+    slice_point = int(data_set.shape[0] * 0.8)
     print('slice_point:', slice_point)
     #[male,female,age,year,distance,traslado,activo]
     
@@ -443,18 +445,55 @@ if __name__ == "__main__":
     
     train = Data(train_set_x, train_set_y)
     test = Data(test_set_x, test_set_y)
-    layers = [train.n, 7, 7,5, 1]
+    layers = [train.n, 7, 10, 10, 7, 1]
+    return train,test,layers
 
+def useNetwork(train, test, layers, alpha=0.0003, iterations=1000, lambd=0.0005, keep_prob=1):
+    
     # Se define el modelo
     Model1 = NN_Model(
-        train, layers, alpha=0.005, iterations=10000, lambd=0.007, keep_prob=1
+        train, layers, alpha=alpha, iterations=iterations, lambd=lambd, keep_prob=keep_prob
     )
-    Model1.training(True)
-    show_Model([Model1])
-    print("Entrenamiento Modelo 1")
-    Model1.predict(train)
-    print("Validacion Modelo 1")
-    Model1.predict(test)
-    
+    Model1.training(False)
+    # show_Model([Model1])
+    # print("Entrenamiento Modelo 1")
+    result_training = Model1.predict(train)
+    # print("Validacion Modelo 1")
+    result_test = Model1.predict(test)
+    return result_training,result_test
 
+def buildHyperParameters(show=False):
+    hyper_limit = 5
+    default_lambda = list(np.random.sample(((hyper_limit -1),)))
+    default_lambda.append(0)
+    alpha_values = np.random.sample((hyper_limit,))
+    max_iteration_values = np.random.randint(low=500,high=5000,size=hyper_limit)
+    keep_prob_values = list(np.random.sample(((hyper_limit - 1),)))
+    keep_prob_values.append(1)
     
+    # print(a)
+    # np.random.shuffle(default_lambda)
+    HYPER["alpha"] =  dict(enumerate(alpha_values.flatten(), 1))#valores aleatorios menores que 0 
+    HYPER["lambda"] = dict(enumerate(default_lambda,1))  #valores aleatorios menores que 0
+    HYPER["max_iteration"] = dict(enumerate(max_iteration_values, 1)) #valores aleatorios mayores que 500
+    HYPER["keep_prob"] = dict(enumerate(keep_prob_values,1)) #valores aleatorios entre 0 y 1
+    if show:
+        for key, value in HYPER.items():
+            print(key,value)
+    
+def getHyperParemeters(setup=[]):
+    if len(setup) > 4:
+        print('setup not supported')
+        exit()
+    
+    result = []
+
+    result.append(HYPER.get('alpha').get(setup[0]))
+    result.append(HYPER.get('lambda').get(setup[1]))
+    result.append(HYPER.get('max_iteration').get(setup[2]))
+    result.append(HYPER.get('keep_prob').get(setup[3]))
+    return result 
+        
+# if __name__ == "__main__":
+#     buildHyperParameters(True)
+#     print(getHyperParemeters([1,1,1,1]))
