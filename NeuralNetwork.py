@@ -381,60 +381,104 @@ def getDataset(municipios = {},path='Datasets/Dataset.csv'):
         for k in reader:
             distance = getDistanceFromUniversity(municipios,cod_depto=int(k['cod_depto']), cod_municipio=int(k['cod_muni']))
             list_dataset.append(getArray(gender=k['Genero'],age=k['edad'],enrollmentYear=k['Año'],distanceFromUniversity=distance,state=k['Estado']))
-        return np.array([escalateVariables(row=k) for k in list_dataset])
+        list_dataset=escalateVariables(data=list_dataset)       
+        return np.array(list_dataset)
 
 def getSingleDataset(municipios={},k={}):
     list_dataset=[]
     distance = getDistanceFromUniversity(municipios,cod_depto=int(k['cod_depto']), cod_municipio=int(k['cod_muni']))
     list_dataset.append(getArray(gender=k['Genero'],age=k['edad'],enrollmentYear=k['Año'],distanceFromUniversity=distance,state=k['Estado']))
-    return np.array([escalateVariables(row=k) for k in list_dataset])
+    list_dataset=escalateVariables(data=list_dataset)       
+    return np.array(list_dataset)
     
     
 
-def escalateVariables(row=[]):
+def escalateVariables(data=[]):
     target_positions = [2,3,4]
     #[male,female,age,year,distance,traslado/activo]
     #2 age: 
-    max_value = float(max(row))
-    min_value = float(min(row))
+    
+    ### get max value of all column: 
+    if len(data) == 1:
+        return data
     for k in target_positions:
-        to_escalate = row[k]
-        new_value = (to_escalate - min_value)/(max_value-min_value)
-        row[k]=new_value
-    return row
+        target_array = [ x[k] for x in data ]
+        max_value = float(max(target_array))
+        min_value = float(min(target_array))
+        for i in data:
+            i[k] = (i[k] - min_value)/(max_value-min_value) 
+    return data
+
 def initNeuralNetworkSingle(data={}):
+    # MUNICIPIOS = getMunicipiosDict()
+    # MUNICIPIOS_GLOBAL = MUNICIPIOS.copy()
+    # data_set = getSingleDataset(MUNICIPIOS,k=data)
+    
+    # # divido 70/30
+    # # slice_point = int(data_set.shape[0] * 1)
+    # # print('slice_point:', slice_point)
+    # #[male,female,age,year,distance,traslado,activo]
+    
+    # # train_set_x = data_set[:5]
+    # # train_set_y = data_set[5:]
+    
+    # # train_set_y = np.random.randint(2, size=train_set_x.shape[0])
+    # test_set_x = data_set[1:5]
+    
+    # test_set_y = data_set[0:,5:]
+    
+    # # train_set_x = train_set_x.T
+    # # train_set_y = train_set_y.T
+    # test_set_x = test_set_x.T
+    # test_set_y = test_set_y.T
+    
+    # # print('train_set_x: ',train_set_x.shape)
+    # # print('train_set_y: ',train_set_y.shape)
+    # print('test_set_x:', test_set_x.shape)
+    # print('test_set_y: ', test_set_y.shape)
+    # # plot_field_data(train_set_x, train_set_y)
+    
+    # # train = Data(train_set_x, train_set_y)
+    # test = Data(test_set_x, test_set_y)
+    # # layers = [train.n, 11, 15, 13, 7, 1]
     MUNICIPIOS = getMunicipiosDict()
     MUNICIPIOS_GLOBAL = MUNICIPIOS.copy()
-    data_set = getSingleDataset(MUNICIPIOS,k=data)
-    
+    data_set = getDataset(MUNICIPIOS)
+    data_single = getSingleDataset(municipios=MUNICIPIOS,k=data)
     # divido 70/30
-    # slice_point = int(data_set.shape[0] * 1)
-    # print('slice_point:', slice_point)
+    slice_point = int(data_set.shape[0] * 0.7)
+    print('slice_point:', slice_point)
     #[male,female,age,year,distance,traslado,activo]
-    
-    # train_set_x = data_set[:5]
-    # train_set_y = data_set[5:]
+    train_set_x = data_set[0:slice_point, :5]
+    train_set_y = data_set[0:slice_point, 5:]
     
     # train_set_y = np.random.randint(2, size=train_set_x.shape[0])
-    test_set_x = data_set[1:5]
+    # test_set_x = data_set[slice_point:, :5]
+    # test_set_y = data_set[slice_point:, 5:]
+    # print(test_set_y.shape)
+    # print(test_set_x.shape)
+    print(data_single)
+    test_set_x = data_single[:,0:5]
+    test_set_y = data_single[:,5:]
+    print(test_set_y.shape)
+    print(test_set_x.shape)
+
     
-    test_set_y = data_set[0:,5:]
-    
-    breakpoint()
-    # train_set_x = train_set_x.T
-    # train_set_y = train_set_y.T
+
+    train_set_x = train_set_x.T
+    train_set_y = train_set_y.T
     test_set_x = test_set_x.T
     test_set_y = test_set_y.T
     
-    # print('train_set_x: ',train_set_x.shape)
-    # print('train_set_y: ',train_set_y.shape)
+    print('train_set_x: ',train_set_x.shape)
+    print('train_set_y: ',train_set_y.shape)
     print('test_set_x:', test_set_x.shape)
     print('test_set_y: ', test_set_y.shape)
     # plot_field_data(train_set_x, train_set_y)
     
-    # train = Data(train_set_x, train_set_y)
+    train = Data(train_set_x, train_set_y)
     test = Data(test_set_x, test_set_y)
-    # layers = [train.n, 11, 15, 13, 7, 1]
+    layers = [train.n, 11, 15, 13, 7, 1]
     return test
 def initNeuralNetwork():
     MUNICIPIOS = getMunicipiosDict()
@@ -444,10 +488,9 @@ def initNeuralNetwork():
     slice_point = int(data_set.shape[0] * 0.7)
     print('slice_point:', slice_point)
     #[male,female,age,year,distance,traslado,activo]
-    
     train_set_x = data_set[0:slice_point, :5]
     train_set_y = data_set[0:slice_point, 5:]
-    breakpoint()
+    
     # train_set_y = np.random.randint(2, size=train_set_x.shape[0])
     test_set_x = data_set[slice_point:, :5]
     test_set_y = data_set[slice_point:, 5:]
@@ -486,7 +529,7 @@ def useNetwork(train, test, layers, alpha=0, iterations=0, lambd=0, keep_prob=0)
 
 def buildHyperParameters(show=False):
     hyper_limit = 10
-    default_lambda = [np.random.uniform(0.5, 7) for x in range(0,hyper_limit)]
+    default_lambda = [np.random.uniform(0.5, 7) for x in range(0,hyper_limit-1)]
     default_lambda.append(0)
     alpha_values = [np.random.uniform(0.5, 0.00001) for x in range(0,hyper_limit)]
     max_iteration_values = np.random.randint(low=100,high=1500,size=hyper_limit)
@@ -518,6 +561,7 @@ def getHyperParemeters(setup=[]):
     result.append(HYPER.get('keep_prob').get(setup[3]))
     return result 
         
-# if __name__ == "__main__":
-#     buildHyperParameters(True)
-#     print(getHyperParemeters([1,1,1,1]))
+if __name__ == "__main__":
+    MUNICIPIOS = getMunicipiosDict()
+    MUNICIPIOS_GLOBAL = MUNICIPIOS.copy()
+    data_set = getDataset(MUNICIPIOS)

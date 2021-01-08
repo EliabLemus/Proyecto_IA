@@ -3,8 +3,8 @@ import random, math, itertools,pickle
 import numpy as np
 import NeuralNetwork 
 # individuals_population=[]
-max_generations = 7
-global_population = 4
+max_generations = 10
+global_population = 8
 TRAIN = []
 TEST = []
 LAYERS = []
