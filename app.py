@@ -7,10 +7,13 @@ import NeuralNetwork,GeneticAlgorithm
 import Plotter
 hyper = []
 to_predict = dict()
+MUNICIPIOS = {}
 # Modelo entrenado
 # with open('TrainedModels/usac_model.dat', 'rb') as f:
 #     models = pickle.load(f)
 #     usac_model = models[0]
+with open('TrainedModels/municipios.dat', 'rb') as f:
+    MUNICIPIOS = pickle.load(f)
     
 app = Flask(__name__)
 app.config['FLASK_DEBUG'] = True
@@ -34,18 +37,16 @@ def hello():
         to_predict["cod_depto"]='1'
         to_predict["cod_muni"]='1'
         to_predict["Año"]='2015'
+        
         return render_template('form.html', to_predict = to_predict)
     if request.method == 'POST':
         print('inside post')
         #AQUI MOSTRAMOS LO DEL MODELO
         with open('TrainedModels/best_model.dat', 'rb') as f:
             best_model = pickle.load(f)
-            Plotter.show_Model([best_model])
-            
+            Plotter.show_Model([best_model])            
             #para predecir: 
             #{'Estado': 'Traslado', 'Genero': 'MASCULINO', 'edad': '39', 'cod_depto': '1', 'nombre': 'Guatemala', 'cod_muni': '1', 'municipio': 'Ciudad de Guatemala', 'A\x96o': '2015'}
-            
-            
             gender = request.form['gender']
             age = request.form['age']
             year = request.form['year']
@@ -63,8 +64,13 @@ def hello():
             test = NeuralNetwork.initNeuralNetworkSingle(data=to_predict)
 
             result = best_model.predict(test)
+            print('result:', result)
+            if result == 1.0:
+                result = 'No se cambiara en un futuro de carrera'
+            else:
+                result = 'Si se cambiara en un futuro de carrera'
             # result = 'No se cambiara' + 'distancia: ' + test 
-            print('result from predict:', result)
+                print('result from predict:', result)
         return render_template('form.html', result=result, to_predict = to_predict)
     
 @app.route("/hyper", methods=['GET'])

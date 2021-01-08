@@ -296,6 +296,8 @@ def getMunicipiosDict():
             for a in municipios:
                 byMunic[int(a.get('Muni'))] = a
             byDeptos[i] = byMunic
+    with open('TrainedModels/municipios.dat', 'wb') as f:
+        pickle.dump(byDeptos,f)
     return byDeptos
 
 def getMunicipios():
