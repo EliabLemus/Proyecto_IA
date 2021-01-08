@@ -53,18 +53,25 @@ theContainer.appendChild(theSelect);
 <p>Hiper parametros</p>
 <form action="/" method="POST" enctype="multipart/form-data">
   <label for="fname">Genero:</label><br>
-  <input type="text" id="gender" name="gender" value="FEMENINO"><br>
+  <input type="text" id="gender" name="gender" value="{{ to_predict["Genero"] }}"><br>
   <label for="lname">Edad:</label><br>
-  <input type="text" id="age" name="age" value="33"><br><br>
+  <input type="text" id="age" name="age" value="{{ to_predict["edad"] }}"><br><br>
   <label for="lname">Año de inscripcion:</label><br>
-  <input type="text" id="year" name="year" value="2015"><br><br>
+  <input type="text" id="year" name="year" value="{{ to_predict["Año"] }}"><br><br>
   <label for="lname">Departamento:</label><br>
-  <div id="depto">
-
-  </div>
-  <input type="text" id="department" name="department" value="1"><br><br>
+  {% if deptos: %}
+  <select id="deptos" name="deptos">
+    {% for a in deptos %}
+    <option value="1">Guatemala</option>
+    <option value="2">Saab</option>
+    <option value="3">Fiat</option>
+    <option value="4">Audi</option>
+    {% endfor %}
+  </select>
+  {% endif %}
+  <input type="text" id="department" name="department" value="{{ to_predict["cod_depto"] }}"><br><br>
   <label for="lname">Municipio:</label><br>
-  <input type="text" id="municipio" name="municipio" value="1"><br><br>
+  <input type="text" id="municipio" name="municipio" value="{{ to_predict["cod_muni"] }}"><br><br>
   <input type="submit" value="Consultar">
 </form>
 {% if result %}

@@ -6,6 +6,7 @@ from flask_bootstrap import Bootstrap
 import NeuralNetwork,GeneticAlgorithm
 import Plotter
 hyper = []
+to_predict = dict()
 # Modelo entrenado
 # with open('TrainedModels/usac_model.dat', 'rb') as f:
 #     models = pickle.load(f)
@@ -27,7 +28,13 @@ app.debug=1
 @app.route("/", methods=['GET', 'POST'])
 def hello():
     if request.method == 'GET':
-        return render_template('form.html')
+        to_predict["Estado"]='Activo' 
+        to_predict["Genero"]='FEMENINO'
+        to_predict["edad"]='39'
+        to_predict["cod_depto"]='1'
+        to_predict["cod_muni"]='1'
+        to_predict["Año"]='2015'
+        return render_template('form.html', to_predict = to_predict)
     if request.method == 'POST':
         print('inside post')
         #AQUI MOSTRAMOS LO DEL MODELO
@@ -37,13 +44,8 @@ def hello():
             
             #para predecir: 
             #{'Estado': 'Traslado', 'Genero': 'MASCULINO', 'edad': '39', 'cod_depto': '1', 'nombre': 'Guatemala', 'cod_muni': '1', 'municipio': 'Ciudad de Guatemala', 'A\x96o': '2015'}
-            to_predict = dict()
-            # to_predict["Estado"]='Activo' 
-            # to_predict["Genero"]='FEMENINO'
-            # to_predict["edad"]='39'
-            # to_predict["cod_depto"]='1'
-            # to_predict["cod_muni"]='1'
-            # to_predict["Año"]='2015'
+            
+            
             gender = request.form['gender']
             age = request.form['age']
             year = request.form['year']
@@ -63,7 +65,7 @@ def hello():
             result = best_model.predict(test)
             # result = 'No se cambiara' + 'distancia: ' + test 
             print('result from predict:', result)
-        return render_template('form.html', result=result)
+        return render_template('form.html', result=result, to_predict = to_predict)
     
 @app.route("/hyper", methods=['GET'])
 def hyper():

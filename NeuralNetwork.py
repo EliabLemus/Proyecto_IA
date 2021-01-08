@@ -3,6 +3,7 @@ from os import error
 import numpy as np
 import matplotlib.pyplot as chart
 from numpy.core.fromnumeric import size
+from DrawNN import DrawNN
 
 USAC_LAT=14.589246
 USAC_LON=-90.551449
@@ -259,7 +260,8 @@ def getHaversineDistances(lat1=0, lon1=0, lat2=0, lon2=0):
 
 
 def plot_field_data(data_x, data_y):
-    chart.scatter(data_x[0, :], data_y[1, :], c=data_y, s=25, cmap=chart.cm.Spectral)
+    chart.scatter(data_x[0, :], data_y[0, :], c=data_y, s=25, cmap=chart.cm.Spectral)
+    chart.savefig('static/ModelGraphs/plot_field_data.png')
     chart.show()
 
 
@@ -272,54 +274,6 @@ def show_Model(models):
     chart.savefig('static/ModelGraphs/best_model.png')
     # chart.show()
     chart.close()
-
-# def example():
-#     ONLY_SHOW = False
-#     # data_set = getData()
-#     print(data_set.shape)
-#     # divido 70/30
-#     slice_point = int(data_set.shape[0] * 0.7)
-#     # # # print('slice_point:', slice_point)
-#     train_set_x = data_set[0:slice_point]
-#     train_set_y = np.random.randint(2, size=train_set_x.shape[0])
-    
-#     test_set_x = data_set[slice_point:]
-#     test_set_y = np.random.randint(2, size=test_set_x.shape[0])
-
-#     train_set_x = train_set_x.T
-#     train_set_y = train_set_y.T
-#     test_set_x = test_set_x.T
-#     test_set_y = test_set_y.T
-
-#     if ONLY_SHOW:
-#         plot_field_data(train_set_x, train_set_y)
-#         # Plotter.plot_field_data(val_X, val_Y)
-#         print("Entradas de entrenamiento:", train_set_x.shape, sep=" ")
-#         print("Salidas de entrenamiento:", train_set_y.shape, sep=" ")
-#         print("Entradas de validacion:", test_set_x.shape, sep=" ")
-#         print("Salidas de validacion:", test_set_y.shape, sep=" ")
-#         exit()
-
-#     train = Data(train_set_x, train_set_y, 100)
-#     test = Data(test_set_x, test_set_y, 100)
-#     layers = [train.n, 10, 5, 1]
-
-#     # Se define el modelo
-#     Model1 = NN_Model(
-#         train, layers, alpha=0.01, iterations=50000, lambd=0.7, keep_prob=1
-#     )
-#     Model1.training(True)
-#     show_Model([Model1])
-#     print("Entrenamiento Modelo 1")
-#     Model1.predict(train)
-#     print("Validacion Modelo 1")
-#     Model1.predict(test)
-
-#     plot_field_data(train_set_x, train_set_y)
-#     print("Entradas de entrenamiento:", train_set_x.shape, sep=" ")
-#     print("Salidas de entrenamiento:", train_set_y.shape, sep=" ")
-#     print("Entradas de validacion:", test_set_x.shape, sep=" ")
-#     print("Salidas de validacion:", test_set_y.shape, sep=" ")
 
 def getCoordinatesMunicipio(municipios={},cod_depto=0,cod_municipio=0):
     
@@ -385,14 +339,34 @@ def getDataset(municipios = {},path='Datasets/Dataset.csv'):
         return np.array(list_dataset)
 
 def getSingleDataset(municipios={},k={}):
-    list_dataset=[]
-    distance = getDistanceFromUniversity(municipios,cod_depto=int(k['cod_depto']), cod_municipio=int(k['cod_muni']))
-    list_dataset.append(getArray(gender=k['Genero'],age=k['edad'],enrollmentYear=k['Año'],distanceFromUniversity=distance,state=k['Estado']))
-    list_dataset=escalateVariables(data=list_dataset)       
-    return np.array(list_dataset)
+        list_dataset = []
+        data_set = getDataFromFile(municipios=municipios)
+        distance = getDistanceFromUniversity(municipios,cod_depto=int(k['cod_depto']), cod_municipio=int(k['cod_muni']))
+        list_dataset.append(getArray(gender=k['Genero'],age=k['edad'],enrollmentYear=k['Año'],distanceFromUniversity=distance,state=k['Estado']))
+        list_dataset=escalateVariableSingle(data=data_set,to_test=list_dataset)       
+        return np.array(list_dataset)
     
+def getDataFromFile(municipios = {},path='Datasets/Dataset.csv' ):
+    list_dataset = []
+    with open(path, "rt", encoding='iso-8859-1') as f:
+        reader = csv.DictReader(f, delimiter = ',')
+        for k in reader:
+            distance = getDistanceFromUniversity(municipios,cod_depto=int(k['cod_depto']), cod_municipio=int(k['cod_muni']))
+            list_dataset.append(getArray(gender=k['Genero'],age=k['edad'],enrollmentYear=k['Año'],distanceFromUniversity=distance,state=k['Estado']))
+    return list_dataset
+def escalateVariableSingle(data=[],to_test=[]):
+    target_positions = [2,3,4]
+    #[male,female,age,year,distance,traslado/activo]
+    #2 age: 
     
-
+    ### get max value of all column: 
+    for k in target_positions:
+        target_array = [ x[k] for x in data ]
+        max_value = float(max(target_array))
+        min_value = float(min(target_array))
+        for i in to_test:
+            i[k] = (i[k] - min_value)/(max_value-min_value) 
+    return to_test
 def escalateVariables(data=[]):
     target_positions = [2,3,4]
     #[male,female,age,year,distance,traslado/activo]
@@ -440,7 +414,7 @@ def initNeuralNetworkSingle(data={}):
     
     # # train = Data(train_set_x, train_set_y)
     # test = Data(test_set_x, test_set_y)
-    # # layers = [train.n, 11, 15, 13, 7, 1]
+    # # layers = neuralNetworkConfig(train.n)
     MUNICIPIOS = getMunicipiosDict()
     MUNICIPIOS_GLOBAL = MUNICIPIOS.copy()
     data_set = getDataset(MUNICIPIOS)
@@ -474,12 +448,15 @@ def initNeuralNetworkSingle(data={}):
     print('train_set_y: ',train_set_y.shape)
     print('test_set_x:', test_set_x.shape)
     print('test_set_y: ', test_set_y.shape)
-    # plot_field_data(train_set_x, train_set_y)
+    plot_field_data(train_set_x, train_set_y)
     
     train = Data(train_set_x, train_set_y)
     test = Data(test_set_x, test_set_y)
-    layers = [train.n, 11, 15, 13, 7, 1]
+    layers = neuralNetworkConfig(train.n)
+    network = DrawNN(layers)
+    network.draw()
     return test
+
 def initNeuralNetwork():
     MUNICIPIOS = getMunicipiosDict()
     MUNICIPIOS_GLOBAL = MUNICIPIOS.copy()
@@ -510,7 +487,10 @@ def initNeuralNetwork():
     
     train = Data(train_set_x, train_set_y)
     test = Data(test_set_x, test_set_y)
-    layers = [train.n, 11, 15, 13, 7, 1]
+    layers = neuralNetworkConfig(train.n)
+    network = DrawNN(layers)
+    network.draw()
+    
     return train,test,layers
 
 def useNetwork(train, test, layers, alpha=0, iterations=0, lambd=0, keep_prob=0):
@@ -526,7 +506,8 @@ def useNetwork(train, test, layers, alpha=0, iterations=0, lambd=0, keep_prob=0)
     # print("Validacion Modelo 1")
     result_test = Model1.predict(test)
     return result_training,result_test, Model1
-
+def neuralNetworkConfig(n):
+    return [n, 8, 8, 5, 2, 1]
 def buildHyperParameters(show=False):
     hyper_limit = 10
     default_lambda = [np.random.uniform(0.5, 7) for x in range(0,hyper_limit-1)]
